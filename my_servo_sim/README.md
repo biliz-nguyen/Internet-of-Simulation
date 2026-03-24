@@ -38,11 +38,11 @@ cp -r my_servo_sim src/
 
 ```mermaid
 flowchart LR
-		A[ESP32 Serial Output] -- "-90 to 90 deg" --> B[serial_to_servo.py]
-		B -- "Float64MultiArray" --> C[/servo_controller/commands]
-		C --> D[ros2_control]
-		D --> E[Gazebo joint: servo_joint]
-		E --> F[/joint_states]
+    A[ESP32: Serial Output] -- "(-90 to 90)" --> B(serial_to_servo.py)
+    B -- "Float64" --> C[/ "/servo_controller/commands" /]
+    C --> D[ros2_control]
+    D --> E[Gazebo: servo_joint]
+    E --> F[/ "/joint_states" /]
 ```
 
 ## 4) Build
