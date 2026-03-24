@@ -1,0 +1,233 @@
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="my_servo">
+
+  <!-- SG90 dimensions in meters -->
+  <xacro:property name="servo_total_mass" value="0.0147" />
+  <xacro:property name="servo_base_mass" value="0.0120" />
+  <xacro:property name="servo_arm_mass" value="0.0027" />
+
+  <xacro:property name="body_length" value="0.0225" />
+  <xacro:property name="body_width" value="0.0118" />
+  <xacro:property name="body_height" value="0.0227" />
+
+  <xacro:property name="tab_total_length" value="0.0320" />
+  <xacro:property name="tab_thickness" value="0.0025" />
+  <xacro:property name="tab_z" value="0.01715" />
+
+  <xacro:property name="cap_radius" value="0.0059" />
+  <xacro:property name="cap_height" value="0.0026" />
+  <xacro:property name="spline_radius" value="0.0023" />
+  <xacro:property name="spline_height" value="0.0032" />
+
+  <!-- Shaft center is offset from body center by 5.35 mm on X -->
+  <xacro:property name="body_center_x" value="0.00535" />
+
+  <xacro:property name="horn_hub_radius" value="0.0050" />
+  <xacro:property name="horn_hub_height" value="0.0020" />
+  <xacro:property name="horn_arm_length" value="0.0140" />
+  <xacro:property name="horn_arm_width" value="0.0030" />
+  <xacro:property name="horn_tip_radius" value="0.0018" />
+
+  <!-- ============================================
+       BASE LINK (Fixed base/driver)
+       ============================================ -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="${body_center_x} 0 ${body_height/2}" rpy="0 0 0"/>
+      <mass value="${servo_base_mass}"/>
+      <inertia
+        ixx="${servo_base_mass * (body_width*body_width + body_height*body_height) / 12}"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="${servo_base_mass * (body_length*body_length + body_height*body_height) / 12}"
+        iyz="0.0"
+        izz="${servo_base_mass * (body_length*body_length + body_width*body_width) / 12}"/>
+    </inertial>
+    <collision>
+      <origin xyz="${body_center_x} 0 ${body_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+    </collision>
+    <!-- Main Body -->
+    <visual>
+      <origin xyz="${body_center_x} 0 ${body_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+      <material name="servo_body">
+        <color rgba="0.08 0.33 0.82 1"/>
+      </material>
+    </visual>
+    <!-- Mounting Flanges -->
+    <visual>
+      <origin xyz="${body_center_x} 0 ${tab_z}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${tab_total_length} ${body_width} ${tab_thickness}"/>
+      </geometry>
+      <material name="servo_body"/>
+    </visual>
+    <!-- Spline base cylinder -->
+    <visual>
+      <origin xyz="0 0 ${body_height + cap_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${cap_radius}" length="${cap_height}"/>
+      </geometry>
+      <material name="servo_body"/>
+    </visual>
+    <!-- Actual Rotating Spline -->
+    <visual>
+      <origin xyz="0 0 ${body_height + cap_height + spline_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${spline_radius}" length="${spline_height}"/>
+      </geometry>
+      <material name="servo_spline">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- ============================================
+       JOINT: servo_joint (Continuous rotation)
+       ============================================ -->
+  <joint name="servo_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="servo_arm"/>
+    <origin xyz="0 0 ${body_height + cap_height + spline_height}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="2.0"/>
+    <dynamics damping="0.1" friction="0.0"/>
+  </joint>
+
+  <!-- ============================================
+       ARM LINK (Rotating part)
+       ============================================ -->
+  <link name="servo_arm">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${servo_arm_mass}"/>
+      <inertia
+        ixx="${servo_arm_mass * (0.03*0.03 + 0.003*0.003) / 12}"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="${servo_arm_mass * (0.03*0.03 + 0.003*0.003) / 12}"
+        iyz="0.0"
+        izz="${servo_arm_mass * (0.03*0.03 + 0.03*0.03) / 12}"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 ${horn_hub_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${horn_arm_length + horn_tip_radius}" length="${horn_hub_height}"/>
+      </geometry>
+    </collision>
+    <!-- Horn center hub -->
+    <visual>
+      <origin xyz="0 0 ${horn_hub_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${horn_hub_radius}" length="${horn_hub_height}"/>
+      </geometry>
+      <material name="servo_horn">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <!-- Wing 1 -->
+    <visual>
+      <origin xyz="${horn_arm_length/2} 0 ${horn_hub_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${horn_arm_length} ${horn_arm_width} ${horn_hub_height}"/>
+      </geometry>
+      <material name="servo_horn"/>
+    </visual>
+    <visual>
+      <origin xyz="${horn_arm_length} 0 ${horn_hub_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${horn_tip_radius}" length="${horn_hub_height}"/>
+      </geometry>
+      <material name="servo_horn"/>
+    </visual>
+
+    <!-- Wing 2 -->
+    <visual>
+      <origin xyz="${horn_arm_length/2 * 0.5} ${horn_arm_length/2 * 0.866} ${horn_hub_height/2}" rpy="0 0 1.0472"/>
+      <geometry>
+        <box size="${horn_arm_length} ${horn_arm_width} ${horn_hub_height}"/>
+      </geometry>
+      <material name="servo_horn"/>
+    </visual>
+    <visual>
+      <origin xyz="${horn_arm_length * 0.5} ${horn_arm_length * 0.866} ${horn_hub_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${horn_tip_radius}" length="${horn_hub_height}"/>
+      </geometry>
+      <material name="servo_horn"/>
+    </visual>
+
+    <!-- Wing 3 -->
+    <visual>
+      <origin xyz="${horn_arm_length/2 * 0.5} ${-horn_arm_length/2 * 0.866} ${horn_hub_height/2}" rpy="0 0 -1.0472"/>
+      <geometry>
+        <box size="${horn_arm_length} ${horn_arm_width} ${horn_hub_height}"/>
+      </geometry>
+      <material name="servo_horn"/>
+    </visual>
+    <visual>
+      <origin xyz="${horn_arm_length * 0.5} ${-horn_arm_length * 0.866} ${horn_hub_height/2}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${horn_tip_radius}" length="${horn_hub_height}"/>
+      </geometry>
+      <material name="servo_horn"/>
+    </visual>
+
+    <!-- Center screw head -->
+    <visual>
+      <origin xyz="0 0 ${horn_hub_height + 0.0007}" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.0016" length="0.0014"/>
+      </geometry>
+      <material name="servo_horn"/>
+    </visual>
+  </link>
+
+  <!-- ============================================
+       ROS 2 CONTROL INTEGRATION
+       ============================================ -->
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+    </hardware>
+
+    <!-- Servo Joint Controller -->
+    <joint name="servo_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <param name="initial_position">0.0</param>
+    </joint>
+  </ros2_control>
+
+  <!-- ============================================
+       GAZEBO PLUGINS
+       ============================================ -->
+  <gazebo>
+    <!-- Plugin to link Gazebo and ROS 2 Control -->
+    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+      <robot_param_node>robot_state_publisher</robot_param_node>
+      <parameters>/home/minh/servo_ws/install/my_servo_sim/share/my_servo_sim/config/my_servo_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+  <!-- Gazebo physics properties for base_link -->
+  <gazebo reference="base_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+  <!-- Gazebo physics properties for servo_arm -->
+  <gazebo reference="servo_arm">
+    <mu1>0.5</mu1>
+    <mu2>0.5</mu2>
+    <material>Gazebo/White</material>
+  </gazebo>
+
+</robot>
